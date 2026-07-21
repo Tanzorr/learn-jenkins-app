@@ -20,7 +20,7 @@ pipeline {
                 '''
             }
         }
-           stage('test') {
+           stage('Test') {
               steps {
                   sh '''
                       echo "Test stage""
@@ -30,6 +30,12 @@ pipeline {
                   '''
               }
            }
-
     }
+    post {
+        always {
+            junit 'test-result/junit.xml'
+            echo 'Cleaning up...'
+            cleanWs()
+        }
+    }}
 }
