@@ -11,46 +11,59 @@ pipeline {
             }
             steps {
                 sh '''
-                     ls -la
-                     node --version
-                     npm --version
-                     npm ci
-                     npm run build
-                     ls -la
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
                 '''
             }
         }
-           stage('Test') {
-              steps {
-                  sh '''
-                      echo "Test stage""
-                      test -f index.html build/
-                      npm test
-                      echo "Test stage completed"
-                  '''
-              }
-           }
-               stage('E2E') {
-                         agent {
-                                docker {
-                                    image 'mcr.microsoft.com/playwright:v1.61.0-noble'
-                                    reuseNode true
-                                }
-                            }
-                         steps {
-                             sh '''
-                                npm install -g serve
-                                servere -s build
-                                npx playwright test
-                             '''
-                         }
-                      }
+
+        stage('Test') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    echo "Test stage"
+                    test -f build/index.html
+                    npm test
+                    echo "Test stage completed"
+                '''
+            }
+        }
+
+        stage('E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.61.0-noble'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm ci
+                    npm install -g serve
+
+                    serve -s build &
+                    sleep 5
+
+                    npx playwright test
+                '''
+            }
+        }
     }
+
     post {
         always {
             junit 'test-result/junit.xml'
             echo 'Cleaning up...'
             cleanWs()
         }
-    }}
+    }
 }
