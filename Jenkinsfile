@@ -59,8 +59,6 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: 'jest-result/junit.xml'
-            echo 'Cleaning up...'
-            cleanWs()
-        }
+            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
     }
 }
