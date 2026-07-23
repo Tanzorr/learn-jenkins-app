@@ -47,12 +47,9 @@ pipeline {
             }
             steps {
                 sh '''
-                       npm ci
-                       npm install serve
-                       npx serve -s build &
-                       sleep 5
-
-                       npx playwright test
+                    npm install serve
+                    node_modules/.bin/serve -s build
+                    npx playwright test
                 '''
             }
         }
