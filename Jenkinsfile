@@ -47,13 +47,12 @@ pipeline {
             }
             steps {
                 sh '''
-                    npm ci
-                    npm install -g serve
+                       npm ci
+                       npm install serve
+                       npx serve -s build &
+                       sleep 5
 
-                    serve -s build &
-                    sleep 5
-
-                    npx playwright test
+                       npx playwright test
                 '''
             }
         }
