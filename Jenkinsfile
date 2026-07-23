@@ -58,7 +58,7 @@ pipeline {
 
     post {
         always {
-            junit allowEmptyResults: true, testResults: 'test-result/junit.xml'
+            junit allowEmptyResults: true, testResults: 'jest-result/junit.xml'
             echo 'Cleaning up...'
             cleanWs()
         }
