@@ -77,7 +77,7 @@ pipeline {
                            node_modules/.bin/netlify --version
                            echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
                            node_modules/.bin/netlify status
-                           node_modules/.bin/netlify deploy
+                           node_modules/.bin/netlify deploy --dir=build --prod
                         '''
                     }
                 }
