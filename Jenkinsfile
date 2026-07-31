@@ -76,8 +76,14 @@ pipeline {
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
                     echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build
+                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json > deploy-output.json
+                    cat deploy-output.json
                 '''
+                script {
+                    def deployOutput = readJSON file: 'deploy-output.json'
+                    env.NETLIFY_SITE_URL = deployOutput.url
+                    echo "Deployed to: ${env.NETLIFY_SITE_URL}"
+                }
             }
         }
 
@@ -87,6 +93,9 @@ pipeline {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                     reuseNode true
                 }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = "${NETLIFY_SITE_URL}"
             }
             steps {
                 sh '''
