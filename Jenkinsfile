@@ -73,6 +73,7 @@ pipeline {
                     }
                     steps {
                         sh '''
+                           echo 'Small change to trigger build'
                            npm install netlify-cli
                            node_modules/.bin/netlify --version
                            echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
