@@ -80,7 +80,8 @@ pipeline {
                     cat deploy-output.json
                 '''
                 script {
-                    def deployOutput = readJSON file: 'deploy-output.json'
+                    def jsonText = readFile('deploy-output.json')
+                    def deployOutput = new groovy.json.JsonSlurper().parseText(jsonText)
                     env.NETLIFY_SITE_URL = deployOutput.url
                     echo "Deployed to: ${env.NETLIFY_SITE_URL}"
                 }
