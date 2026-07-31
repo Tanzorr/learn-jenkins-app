@@ -57,7 +57,7 @@ pipeline {
                             npm install serve@13
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test --reporter=html --output=e2e-results
+                            npx playwright test --reporter=Local --output=e2e-results
                         '''
                     }
                 }
@@ -81,6 +81,22 @@ pipeline {
                         '''
                     }
                 }
+
+                 stage('Prod E2E') {
+                                    agent {
+                                        docker {
+                                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                                            reuseNode true
+                                        }
+                                    }
+                                    steps {
+                                        sh '''
+                                            npx playwright test --reporter=In server --output=e2e-results
+                                        '''
+                                    }
+                                }
+                                  environment {
+                                            }
     }
 
     post {
