@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-     NETLIFY_PROJECT_ID = 'da00dfe9-8c93-4ec5-89f6-d91388ac75d7'
-     NETLIFY_AUTH_TOKEN = credentials('netlify_tocken')
-   }
+        NETLIFY_PROJECT_ID = 'da00dfe9-8c93-4ec5-89f6-d91388ac75d7'
+        NETLIFY_AUTH_TOKEN = credentials('netlify_tocken')
+    }
 
     stages {
         stage('Build') {
@@ -57,7 +57,7 @@ pipeline {
                             npm install serve@13
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test --reporter=Local --output=e2e-results
+                            npx playwright test --reporter=html --output=e2e-results
                         '''
                     }
                 }
@@ -65,44 +65,41 @@ pipeline {
         }
 
         stage('Deploy') {
-                    agent {
-                        docker {
-                            image 'node:18-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                           echo 'Small change to trigger build'
-                           npm install netlify-cli
-                           node_modules/.bin/netlify --version
-                           echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                           node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build
-                        '''
-                    }
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
                 }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
+                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build
+                '''
+            }
+        }
 
-                 stage('Prod E2E') {
-                                    agent {
-                                        docker {
-                                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                                            reuseNode true
-                                        }
-                                    }
-                                    steps {
-                                        sh '''
-                                            npx playwright test --reporter=In server --output=e2e-results
-                                        '''
-                                    }
-                                }
-                                  environment {
-                                            }
+        stage('Prod E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npx playwright test --reporter=html --output=e2e-results
+                '''
+            }
+        }
     }
 
     post {
         always {
             junit allowEmptyResults: true, testResults: 'test-results/junit.xml'
-            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
         }
     }
 }
