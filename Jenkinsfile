@@ -76,7 +76,7 @@ pipeline {
                            npm install netlify-cli
                            node_modules/.bin/netlify --version
                            echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                           node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod
+                           node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build
                         '''
                     }
                 }
