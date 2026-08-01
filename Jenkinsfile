@@ -64,7 +64,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy staging') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -76,7 +76,7 @@ pipeline {
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
                     echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json > deploy-output.json
+                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --no-build --json > deploy-output.json
                     cat deploy-output.json
                 '''
                 script {
@@ -87,6 +87,30 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy production') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            npm install netlify-cli
+                            node_modules/.bin/netlify --version
+                            echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
+                            node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json > deploy-output.json
+                            cat deploy-output.json
+                        '''
+                        script {
+                            def jsonText = readFile('deploy-output.json')
+                            def deployOutput = new groovy.json.JsonSlurper().parseText(jsonText)
+                            env.NETLIFY_SITE_URL = deployOutput.url
+                            echo "Deployed to: ${env.NETLIFY_SITE_URL}"
+                        }
+                    }
+                }
 
         stage('Prod E2E') {
             agent {
