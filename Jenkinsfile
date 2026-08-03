@@ -100,7 +100,7 @@ pipeline {
                             npm install netlify-cli
                             node_modules/.bin/netlify --version
                             echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                            node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json > deploy-output.json
+                            node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json
                             cat deploy-output.json
                         '''
                         script {
@@ -111,7 +111,12 @@ pipeline {
                         }
                     }
                 }
-
+           stage('Approval') {
+                    steps {
+                        timeout(time: 15, unit: 'MINUTES') {
+                            input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+                        }
+                    }
         stage('Prod E2E') {
             agent {
                 docker {
