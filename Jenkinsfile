@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_PROJECT_ID = 'da00dfe9-8c93-4ec5-89f6-d91388ac75d7'
-        NETLIFY_AUTH_TOKEN = credentials('netlify_tocken')
+        NETLIFY_SITE_ID = '03d4042d-476c-4668-9ce8-34352dad73e4'
+        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
 
     stages {
+
         stage('Build') {
             agent {
                 docker {
@@ -28,20 +29,24 @@ pipeline {
 
         stage('Tests') {
             parallel {
-                stage('Unit Tests') {
+                stage('Unit tests') {
                     agent {
                         docker {
                             image 'node:18-alpine'
                             reuseNode true
                         }
                     }
+
                     steps {
                         sh '''
-                            echo "Test stage"
-                            test -f build/index.html
+                            #test -f build/index.html
                             npm test
-                            echo "Test stage completed"
                         '''
+                    }
+                    post {
+                        always {
+                            junit 'jest-results/junit.xml'
+                        }
                     }
                 }
 
@@ -52,13 +57,20 @@ pipeline {
                             reuseNode true
                         }
                     }
+
                     steps {
                         sh '''
-                            npm install serve@13
+                            npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test --reporter=html --output=e2e-results
+                            npx playwright test  --reporter=html
                         '''
+                    }
+
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local', reportTitles: '', useWrapperFileDirectly: true])
+                        }
                     }
                 }
             }
@@ -73,50 +85,42 @@ pipeline {
             }
             steps {
                 sh '''
-                    npm install netlify-cli
+                    npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
-                    echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                    node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --no-build --json > deploy-output.json
-                    cat deploy-output.json
+                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
+                    node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json
                 '''
-                script {
-                    def jsonText = readFile('deploy-output.json')
-                    def deployOutput = new groovy.json.JsonSlurper().parseText(jsonText)
-                    env.NETLIFY_SITE_URL = deployOutput.url
-                    echo "Deployed to: ${env.NETLIFY_SITE_URL}"
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                timeout(time: 15, unit: 'MINUTES') {
+                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
                 }
             }
         }
 
-        stage('Deploy production') {
-                    agent {
-                        docker {
-                            image 'node:18-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                            npm install netlify-cli
-                            node_modules/.bin/netlify --version
-                            echo "Deploying to Netlify Project ID: $NETLIFY_PROJECT_ID"
-                            node_modules/.bin/netlify deploy --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_PROJECT_ID --dir=build --prod --no-build --json
-                            cat deploy-output.json
-                        '''
-                        script {
-                            def jsonText = readFile('deploy-output.json')
-                            def deployOutput = new groovy.json.JsonSlurper().parseText(jsonText)
-                            env.NETLIFY_SITE_URL = deployOutput.url
-                            echo "Deployed to: ${env.NETLIFY_SITE_URL}"
-                        }
-                    }
+        stage('Deploy prod') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
                 }
-           stage('Approval') {
-                    steps {
-                        timeout(time: 15, unit: 'MINUTES') {
-                            input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
-                        }
-                    }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build --prod
+                '''
+            }
+        }
+
         stage('Prod E2E') {
             agent {
                 docker {
@@ -124,21 +128,22 @@ pipeline {
                     reuseNode true
                 }
             }
+
             environment {
-                CI_ENVIRONMENT_URL = "${NETLIFY_SITE_URL}"
+                CI_ENVIRONMENT_URL = 'https://peaceful-daffodil-303af5.netlify.app'
             }
+
             steps {
                 sh '''
-                    npx playwright test --reporter=html --output=e2e-results
+                    npx playwright test  --reporter=html
                 '''
             }
-        }
-    }
 
-    post {
-        always {
-            junit allowEmptyResults: true, testResults: 'test-results/junit.xml'
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E', reportTitles: '', useWrapperFileDirectly: true])
+                }
+            }
         }
     }
 }
