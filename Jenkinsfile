@@ -4,6 +4,7 @@ pipeline {
     environment {
         NETLIFY_SITE_ID = 'da00dfe9-8c93-4ec5-89f6-d91388ac75d7'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+        REACT_APP_VERSION = '1.0.0'
     }
 
     stages {
@@ -83,7 +84,7 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install netlify-cli@17
+                    npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
@@ -101,13 +102,6 @@ pipeline {
             }
         }
 
-        stage('Approval') {
-            steps {
-                timeout(time: 15, unit: 'MINUTES') {
-                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
-                }
-            }
-        }
              stage('Deploy prod') {
             agent {
                 docker {
@@ -122,7 +116,7 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install netlify-cli@17
+                    npm install netlify-cli
                     node_modules/.bin/netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
