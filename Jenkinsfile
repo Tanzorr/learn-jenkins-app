@@ -4,7 +4,7 @@ pipeline {
     environment {
         NETLIFY_SITE_ID = 'da00dfe9-8c93-4ec5-89f6-d91388ac75d7'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
-        REACT_APP_VERSION = '1.0.0'
+        REACT_APP_VERSION = '1.0.${BUILD_ID}'
     }
 
     stages {
@@ -84,7 +84,7 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install netlify-cli node-jq
+                    npm install netlify-cli@17 node-jq
                     node_modules/.bin/netlify --version
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
@@ -116,7 +116,7 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install netlify-cli
+                    npm install netlify-cli@17
                     node_modules/.bin/netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
