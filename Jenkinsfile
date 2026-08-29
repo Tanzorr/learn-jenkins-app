@@ -11,7 +11,7 @@ pipeline {
                          agent {
                               docker {
                                  image 'amazon/aws-cli'
-                                 args " --entrypoint=''"
+                                 args "-u root --entrypoint=''"
                                  reuseNode true
                             }
                          }
@@ -19,8 +19,10 @@ pipeline {
                               withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                                        sh '''
                                            aws --version
-                                           aws ecs register-task-definition --cli-input-json file://aws/task-definition-prod.json
-                                           aws ecs update-service --cluster hollow-zebra-x0x9rb --service Learn-Jenkins-App-Service-Prod --task-definition learn-jenkins-app-task-definition-prod:5
+                                           yim install jq -y
+                                           LATES_TD_REVISION = $(aws ecs register-task-definition --cli-input-json file://aws/task-definition-prod.json | jq '.taksDefinition.revision)'
+                                           echo $LATES_TD_REVISION
+                                           aws ecs update-service --cluster hollow-zebra-x0x9rb --service Learn-Jenkins-App-Service-Prod --task-definition learn-jenkins-app-task-definition-prod:$LATES_TD_REVISION
                                           '''
                               }
                           }
