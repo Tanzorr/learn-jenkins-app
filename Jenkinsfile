@@ -29,20 +29,20 @@ pipeline {
             }
         }
 
-            stage('Build Docker image') {
-                      agent {
-                            docker {
-                                         image 'amazon/aws-cli'
-                                          args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=''"
-                                         reuseNode true
-                                     }
-                                 }
-                                steps {
-                                  sh '''
-                                  amazon-linux-extras install docker
-                                  docker build -t my-genkins-app .'''
-                                }
-                        }
+        stage('Build Docker image') {
+            agent {
+                docker {
+                    image 'docker:27-cli'
+                    args "-u root -v /var/run/docker.sock:/var/run/docker.sock"
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    docker build -t my-jenkins-app:$BUILD_ID .
+                '''
+            }
+        }
 
         stage('Deploy to AWS') {
             agent {
