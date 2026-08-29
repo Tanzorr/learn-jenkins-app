@@ -27,13 +27,13 @@ pipeline {
                     ls -la
                 '''
             }
-
-                   stage('Build Docker image') {
-                        steps {
-                          sh "docker build -t my-genkins-app ."
-                        }
-                }
         }
+
+            stage('Build Docker image') {
+                                steps {
+                                  sh "docker build -t my-genkins-app ."
+                                }
+                        }
 
         stage('Deploy to AWS') {
             agent {
