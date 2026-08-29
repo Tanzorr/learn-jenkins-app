@@ -7,6 +7,7 @@ pipeline {
         AWS_ECS_CLUSTER = "hollow-zebra-x0x9rb"
         AWS_ECS_SERVICE_PROD = "Learn-Jenkins-App-Service-Prod"
         AWS_ECS_TD_PROD = "learn-jenkins-app-task-definition-prod"
+        LEARN_JENKINS_APP = "my-jenkins-app"
     }
 
     stages {
@@ -31,23 +32,25 @@ pipeline {
 
         stage('Build Docker image') {
             agent {
-                docker {
-                    image 'my-aws-cli'
-                    args "-u root -v /var/run/docker.sock:/var/run/docker.sock"
+                dockerfile {
+                    filename 'Dockerfile-aws-cli'
+                    dir 'ci'
+                    args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=''"
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    docker build -t my-jenkins-app:$BUILD_ID .
+                    docker build -t $LEARN_JENKINS_APP:$BUILD_ID .
                 '''
             }
         }
 
         stage('Deploy to AWS') {
             agent {
-                docker {
-                    image 'my-aws-cli'
+                dockerfile {
+                    filename 'Dockerfile-aws-cli'
+                    dir 'ci'
                     args "-u root --entrypoint=''"
                     reuseNode true
                 }
@@ -56,7 +59,6 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         aws --version
-                        yum install jq -y
                         LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition-prod.json | jq -r '.taskDefinition.revision')
                         echo $LATEST_TD_REVISION
                         aws ecs update-service --cluster $AWS_ECS_CLUSTER --service $AWS_ECS_SERVICE_PROD --task-definition $AWS_ECS_TD_PROD:$LATEST_TD_REVISION
