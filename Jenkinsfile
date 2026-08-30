@@ -65,6 +65,7 @@ pipeline {
                     sh '''
                         aws --version
                         jq --arg IMAGE "$AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID" '.containerDefinitions[0].image = $IMAGE' aws/task-definition-prod.json > td-final.json
+                        sed -i "s/#APP VERSION#/$REACT_APP_VERSION/g" aws/task-definition-prod.json
                         LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://td-final.json | jq -r '.taskDefinition.revision')
                         echo $LATEST_TD_REVISION
                         aws ecs update-service --cluster $AWS_ECS_CLUSTER --service $AWS_ECS_SERVICE_PROD --task-definition $AWS_ECS_TD_PROD:$LATEST_TD_REVISION
