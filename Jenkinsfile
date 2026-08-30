@@ -6,6 +6,7 @@ pipeline {
         AWS_DEFAULT_REGION = "eu-north-1"
         AWS_ECS_CLUSTER = "hollow-zebra-x0x9rb"
         AWS_ECS_SERVICE_PROD = "Learn-Jenkins-App-Service-Prod"
+        AWS_DOCKER_REGISTRY = "781425929258.dkr.ecr.eu-north-1.amazonaws.com"
         AWS_ECS_TD_PROD = "learn-jenkins-app-task-definition-prod"
         LEARN_JENKINS_APP = "my-jenkins-app"
     }
@@ -41,7 +42,8 @@ pipeline {
             }
             steps {
                 sh '''
-                    docker build -t $LEARN_JENKINS_APP:$BUILD_ID .
+                    docker build -t $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID .
+                    docker push $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID
                 '''
             }
         }
