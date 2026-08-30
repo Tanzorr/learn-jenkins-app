@@ -41,10 +41,13 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                    docker build -t $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID .
-                    docker push $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID
-                '''
+                withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_DOCKER_REGISTRY
+                        docker build -t $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID .
+                        docker push $AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID
+                    '''
+                }
             }
         }
 
@@ -61,7 +64,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         aws --version
-                        LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition-prod.json | jq -r '.taskDefinition.revision')
+                        jq --arg IMAGE "$AWS_DOCKER_REGISTRY/$LEARN_JENKINS_APP:$BUILD_ID" '.containerDefinitions[0].image = $IMAGE' aws/task-definition-prod.json > td-final.json
+                        LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://td-final.json | jq -r '.taskDefinition.revision')
                         echo $LATEST_TD_REVISION
                         aws ecs update-service --cluster $AWS_ECS_CLUSTER --service $AWS_ECS_SERVICE_PROD --task-definition $AWS_ECS_TD_PROD:$LATEST_TD_REVISION
                         aws ecs wait services-stable --cluster $AWS_ECS_CLUSTER --services $AWS_ECS_SERVICE_PROD
